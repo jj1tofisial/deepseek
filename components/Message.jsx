@@ -1,49 +1,124 @@
-import { assets } from '@/assets/assets'
-import Image from 'next/image'
-import React from 'react'
+import { assets } from '@/assets/assets';
+import Image from 'next/image';
+import React, { useEffect } from 'react';
+import Markdown from 'react-markdown';
+import Prism from 'prismjs';
+import toast from 'react-hot-toast';
 
-const Message = ({role,content}) => {
+const Message = ({ role, content, onRegenerate, isLoading }) => {
+
+  useEffect(() => {
+    Prism.highlightAll();
+  }, [content]);
+
+  const copyMessage = () => {
+    navigator.clipboard.writeText(content);
+    toast.success("Copied!");
+  };
+
   return (
-    <div className='flex flex-col items-center w-full max-w-3xl text-sm'>
-      <div className={`flex flex-col w-full mb-8 ${role === 'user' && 'items-end'}`}>
-        <div className={`group relative flex max-w-2xl py-3 rounded-xl ${role === 'user' ? 'bg-[#414158] px-5' : 'gap-3'} `}>
-        <div className={`opacity-0 group-hover:opacity-100 absolute ${role==='user'? '-left-16 top-2.5':'left-9 bottom-6'}transition-all`}>
-         <div className='flex items-center gap-2 opacity-70'>
-            {
-                role === 'user' ? (
-                    <>
-                    
-                    <Image src={assets.copy_icon} alt="" className='w-4 cursor-pointer' />
-                    <Image src={assets.pencil_icon} alt="" className='w-4.5 cursor-pointer' />
-                    </>
-                ):(
-                    <>
-                    <Image src={assets.copy_icon} alt="" className='w-4.5 cursor-pointer' />
-                    <Image src={assets.regenerate_icon} alt="" className='w-4 cursor-pointer' />
-                    <Image src={assets.like_icon} alt="" className='w-4 cursor-pointer' />
-                    <Image src={assets.dislike_icon} alt="" className='w-4 cursor-pointer' />
-                    
-                    </>
-                )
-            }
-         </div>
-        </div>
-        {
-            role==='user'?
-                (
-                <span className='text-white/90'>{content}</span>
-                ):(
-                    <>
-                    <Image src = {assets.logo_icon} alt = "" className='h-9 w-9 p-1 border border-white/15 rounded-full'/>
-                    <div className='space - y-4 w-full overflow-scroll'>{content}</div>
-                </>
-                )
-            
-            }
+    <div className="flex flex-col items-center w-full max-w-3xl text-sm">
+      <div className={`relative w-full mb-8 ${role === 'user' ? 'flex flex-col items-end' : ''}`}>
+        {/* Main message container */}
+        <div
+          className={`group relative flex max-w-2xl py-3 rounded-xl ${
+            role === 'user' ? 'bg-[#414158] px-5' : 'gap-3'
+          }`}
+        >
+          {role === 'user' ? (
+            <>
+              <span className="text-white/90 whitespace-pre-wrap break-words">{content}</span>
+              {/* User icons */}
+              <div className="opacity-0 group-hover:opacity-100 absolute -left-16 top-2.5 transition-all flex items-center gap-2 opacity-70">
+                <div className="relative group/tooltip">
+                  <Image onClick={copyMessage} src={assets.copy_icon} alt="Copy" className="w-4 cursor-pointer" />
+                  <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                    <span className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity shadow-lg">
+                      Copy
+                    </span>
+                    <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-black opacity-0 group-hover/tooltip:opacity-100 transition-opacity -mt-1" />
+                  </div>
+                </div>
+                {/* Edit icon... (you can add onClick if needed) */}
+                <div className="relative group/tooltip">
+                  <Image src={assets.pencil_icon} alt="Edit" className="w-[18px] cursor-pointer" />
+                  <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                    <span className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity shadow-lg">
+                      Edit
+                    </span>
+                    <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-black opacity-0 group-hover/tooltip:opacity-100 transition-opacity -mt-1" />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <Image
+                src={assets.logo_icon}
+                alt="Assistant Logo"
+                className="h-9 w-9 p-1 border border-white/15 rounded-full flex-shrink-0"
+              />
+              <div className="flex-1">
+                <div className="whitespace-pre-wrap break-words"><Markdown>{content}</Markdown></div>
+                {/* AI icons */}
+                <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-3 opacity-70 mt-2 ml-0">
+                  <div className="relative group/tooltip">
+                    <Image onClick={copyMessage} src={assets.copy_icon} alt="Copy" className="w-[18px] cursor-pointer" />
+                    <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                      <span className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity shadow-lg">
+                        Copy
+                      </span>
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-black opacity-0 group-hover/tooltip:opacity-100 transition-opacity -mt-1" />
+                    </div>
+                  </div>
+
+                  {/* Regenerate icon with click handler */}
+                  <div className="relative group/tooltip">
+                    <Image
+                      src={assets.regenerate_icon}
+                      alt="Regenerate"
+                      className={`w-4 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={() => {
+                        if (!isLoading && onRegenerate) {
+                          onRegenerate();
+                        }
+                      }}
+                    />
+                    <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                      <span className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity shadow-lg">
+                        {isLoading ? 'Regenerating...' : 'Regenerate'}
+                      </span>
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-black opacity-0 group-hover/tooltip:opacity-100 transition-opacity -mt-1" />
+                    </div>
+                  </div>
+
+                  {/* Like and Dislike icons */}
+                  <div className="relative group/tooltip">
+                    <Image src={assets.like_icon} alt="Like" className="w-4 cursor-pointer" />
+                    <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                      <span className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity shadow-lg">
+                        Like
+                      </span>
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-black opacity-0 group-hover/tooltip:opacity-100 transition-opacity -mt-1" />
+                    </div>
+                  </div>
+                  <div className="relative group/tooltip">
+                    <Image src={assets.dislike_icon} alt="Dislike" className="w-4 cursor-pointer" />
+                    <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                      <span className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity shadow-lg">
+                        Dislike
+                      </span>
+                      <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-black opacity-0 group-hover/tooltip:opacity-100 transition-opacity -mt-1" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Message
+export default Message;

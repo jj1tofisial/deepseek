@@ -1,4 +1,4 @@
-'use client' 
+'use client'
 import { assets } from '@/assets/assets'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
@@ -7,19 +7,19 @@ import { useAppContext } from '@/context/AppContext'
 import ChatLabel from './ChatLabel'
 
 const Sidebar = ({ expand, setExpand }) => {
-  const{openSignIn}=useClerk()
-  const{user} = useAppContext()
-  const [openMenu, setOpenMenu] = useState({ id: 0, open: false });
-
-  const [mounted, setMounted] = useState(false);
+  const { openSignIn } = useClerk()
+  const { user, chats, createNewChat, deleteChat } = useAppContext()
+  const [openMenu, setOpenMenu] = useState({ id: 0, open: false })
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   return (
     <div className={`flex flex-col justify-between bg-[#212327] pt-7 transition-all z-50 max-md:absolute max-md:h-screen ${expand ? 'p-4 w-68 overflow-visible' : 'md:w-16 w-0 max-md:overflow-hidden'}`}>
       <div>
+        {/* Logo and toggle */}
         <div className={`flex ${expand ? "flex-row gap-10" : "flex-col items-center gap-8"}`}>
           {mounted && (
             <Image src={expand ? assets.logo_text : assets.logo_icon} alt="Logo" />
@@ -37,7 +37,8 @@ const Sidebar = ({ expand, setExpand }) => {
           </div>
         </div>
 
-        <button className={`mt-8 flex items-center justify-center cursor-pointer ${expand ? "bg-primary hover:opacity-90 rounded-2xl gap-2 p-2.5 w-max" : "group relative h-9 w-9 mx-auto hover:bg-gray-500/30 rounded-lg"}`}>
+        {/* New Chat Button */}
+        <button onClick={createNewChat} className={`mt-8 flex items-center justify-center cursor-pointer ${expand ? "bg-primary hover:opacity-90 rounded-2xl gap-2 p-2.5 w-max" : "group relative h-9 w-9 mx-auto hover:bg-gray-500/30 rounded-lg"}`}>
           <Image className={expand ? 'w-6' : 'w-7'} src={expand ? assets.chat_icon : assets.chat_icon_dull} alt="Chat Icon" />
           <div className="absolute w-max -top-12 -right-12 opacity-0 group-hover:opacity-100 transition bg-black text-white text-sm px-3 py-2 rounded-lg shadow-lg pointer-events-none">
             New Chat
@@ -46,35 +47,45 @@ const Sidebar = ({ expand, setExpand }) => {
           {expand && <p className="text-white text font-medium">New Chat</p>}
         </button>
 
-        <div className ={`mt-8 text-white/25 text-sm ${expand ? "block":"hidden"}`}>
-            <p className="my-1">
-                Recents
-            </p>
-            <ChatLabel openMenu={openMenu} setOpenMenu={setOpenMenu}/>
+        {/* Recents List */}
+        <div className={`mt-8 text-white/25 text-sm ${expand ? "block" : "hidden"}`}>
+          <p className="my-1">Recents</p>
+          {chats.map((chat) => (
+            <ChatLabel
+              key={chat._id}
+              name={chat.name}
+              id={chat._id}
+              openMenu={openMenu}
+              setOpenMenu={setOpenMenu}
+              deleteChat={deleteChat} // pass delete function to ChatLabel
+            />
+          ))}
         </div>
       </div>
+
+      {/* Get App & Profile */}
       <div>
-        <div className={`flex items-center cursor-pointer group relative ${expand?"gap-1 text-white/80 text-sm p-2.5 border border-primary rounded-lg hover:bg-white/10 cursor-pointer":"h-10 w-10 mx-auto hover:bg-gray-500/30 rounded-lg"}`}>
+        <div className={`flex items-center cursor-pointer group relative ${expand ? "gap-1 text-white/80 text-sm p-2.5 border border-primary rounded-lg hover:bg-white/10 cursor-pointer" : "h-10 w-10 mx-auto hover:bg-gray-500/30 rounded-lg"}`}>
           <Image className={expand ? "w-5" : "w-6 mx-auto"} src={expand ? assets.phone_icon : assets.phone_icon_dull} alt='' />
-          <div className={`absolute -top-60 pb-8 ${!expand && "-right-40"} opacity-0 group-hover:opacity-100 hidden group-hover:block transition`}> 
+          <div className={`absolute -top-60 pb-8 ${!expand && "-right-40"} opacity-0 group-hover:opacity-100 hidden group-hover:block transition`}>
             <div className='relative w-max bg-black text-white text-sm p-3 rounded-lg shadow-lg'>
-              <Image src={assets.qrcode} alt='' className='w-44'/>
+              <Image src={assets.qrcode} alt='' className='w-44' />
               <p>Scan to get DeepSeek App</p>
               <div className={`w-3 h-3 absolute bg-black rotate-45 ${expand ? "right-1/2" : "left-4"} -bottom-1.5`}></div>
             </div>
           </div>
-          {expand && <><span>Get App</span><Image alt='' src={assets.new_icon}/></>}
+          {expand && <><span>Get App</span><Image alt='' src={assets.new_icon} /></>}
         </div>
-        <div onClick={user? null :openSignIn}
-        className={`flex items-center ${expand?"hover:bg-white/10 rounded-lg gap-3":"justify-center w-full"} text-white/60 text-sm p-2 mt-2 cursor-pointer`}>
-            {
-              user? <UserButton/>
-              :
-              <Image src = {assets.profile_icon} alt='' className='w-7'/>
 
-            }
-            
-            {expand && <span>My Profile</span>}
+        <div onClick={user ? null : openSignIn}
+          className={`flex items-center ${expand ? "hover:bg-white/10 rounded-lg gap-3" : "justify-center w-full"} text-white/60 text-sm p-2 mt-2 cursor-pointer`}>
+          {
+            user ? <UserButton />
+              :
+              <Image src={assets.profile_icon} alt='' className='w-7' />
+          }
+
+          {expand && <span>My Profile</span>}
         </div>
       </div>
     </div>
