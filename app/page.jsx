@@ -30,6 +30,35 @@ export default function Home() {
     }
   }, [messages]);
 
+  // Simulated AI response generator
+  const generateAIResponse = async (userMessage) => {
+    // Replace this with your real API/logic
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve(`Here’s a regenerated response to: "${userMessage}"`);
+      }, 1000);
+    });
+  };
+
+  const handleRegenerate = async (index) => {
+    const userMessageIndex = index - 1;
+    if (userMessageIndex < 0 || messages[userMessageIndex]?.role !== 'user') return;
+
+    setIsLoading(true);
+
+    const userMessage = messages[userMessageIndex].content;
+    const regeneratedResponse = await generateAIResponse(userMessage);
+
+    const updatedMessages = [...messages];
+    updatedMessages[index] = {
+      role: 'assistant',
+      content: regeneratedResponse
+    };
+
+    setMessages(updatedMessages);
+    setIsLoading(false);
+  };
+
   return (
     <div>
       <div className="flex h-screen">
@@ -68,7 +97,12 @@ export default function Home() {
                 {selectedChat?.name}
               </p>
               {messages.map((msg, index) => (
-                <Message key={index} role={msg.role} content={msg.content} />
+                <Message
+                  key={index}
+                  role={msg.role}
+                  content={msg.content}
+                  onRegenerate={() => handleRegenerate(index)}
+                />
               ))}
 
               {isLoading && (
