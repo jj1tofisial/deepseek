@@ -6,16 +6,6 @@ import Chat from "@/models/Chat";
 import connectDB from "@/config/db";
 import OpenAI from "openai";
 
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "http://localhost:3000", 
-    "X-Title": "DeepSeek Chat",
-  },
-});
-
 export async function POST(req) {
   try {
     const { userId } = getAuth(req);
@@ -42,13 +32,22 @@ export async function POST(req) {
     };
     data.messages.push(userPrompt);
 
-   
     const chatHistory = data.messages.slice(-10).map((msg) => ({
       role: msg.role,
       content: msg.content,
     }));
 
-    
+    const referer = req.headers.get("referer") || "http://localhost:3000";
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": referer,
+        "X-Title": "DeepSeek Chat",
+      },
+    });
+
     const openaiResponse = await openai.chat.completions.create({
       model: "deepseek/deepseek-r1:free",
       messages: chatHistory,
