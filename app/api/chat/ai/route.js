@@ -40,7 +40,7 @@ export async function POST(req) {
     const referer = req.headers.get("referer") || "http://localhost:3000";
 
     const openai = new OpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY,
+      apiKey: process.env.OPENAI_API_KEY,
       baseURL: "https://openrouter.ai/api/v1",
       defaultHeaders: {
         "HTTP-Referer": referer,
