@@ -55,7 +55,9 @@ const ChatLabel = ({ id, name, openMenu, setOpenMenu }) => {
       onClick={selectChat}
       className='flex items-center justify-between p-2 text-white/80 hover:bg-white/10 rounded-lg text-sm group cursor-pointer'
     >
-      <p className='group-hover:max-w-[83.3333%] truncate'>{name}</p>
+      {/* Show the title (fallback to "New Chat" if name is empty) */}
+      <p className='group-hover:max-w-[83.3333%] truncate'>{name || "New Chat"}</p>
+
       <div
         onClick={e => {
           e.stopPropagation()

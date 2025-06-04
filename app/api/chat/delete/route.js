@@ -6,7 +6,7 @@ import { getAuth } from "@clerk/nextjs/server";
 export async function POST(req) {
   try {
     const { userId } = getAuth(req);
-    const { chatId } = await req.json(); // ✅ Fixed typo "awat.req"
+    const { chatId } = await req.json();
 
     if (!userId) {
       return NextResponse.json({
@@ -16,7 +16,7 @@ export async function POST(req) {
     }
 
     await connectDB();
-    await Chat.deleteOne({ _id: chatId, userId }); // ✅ Moved closing parenthesis
+    await Chat.deleteOne({ _id: chatId, userId });
 
     return NextResponse.json({
       success: true,

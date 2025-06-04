@@ -17,9 +17,22 @@ const PromptBox = ({ setIsLoading, isLoading }) => {
     }
   };
 
+  const generateTitle = async (userPrompt, assistantReply) => {
+    try {
+      const { data } = await axios.post("/api/chat/title", {
+        prompt: `Generate a short and descriptive title (max 5 words) for this conversation:\nUser: ${userPrompt}\nAssistant: ${assistantReply}`,
+      });
+      if (data.success && data.title) return data.title;
+    } catch (err) {
+      console.error("Title generation failed", err.message);
+    }
+    return null;
+  };
+
   const sendPrompt = async (e) => {
     e.preventDefault();
-    const promptCopy = prompt;
+    const promptCopy = prompt.trim();
+    if (!promptCopy) return;
 
     try {
       if (!user) return toast.error("Login to send message");
@@ -31,10 +44,14 @@ const PromptBox = ({ setIsLoading, isLoading }) => {
 
       const userPrompt = {
         role: "user",
-        content: prompt,
+        content: promptCopy,
         timestamp: Date.now(),
       };
 
+      // Save message count before adding user message
+      const prevMessageCount = selectedChat.messages.length;
+
+      // Add user message locally
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat._id === selectedChat._id
@@ -42,54 +59,83 @@ const PromptBox = ({ setIsLoading, isLoading }) => {
             : chat
         )
       );
-
       setSelectedChat((prev) => ({
         ...prev,
         messages: [...prev.messages, userPrompt],
       }));
 
+      // Request AI response
       const { data } = await axios.post("/api/chat/ai", {
         chatId: selectedChat._id,
-        prompt,
+        prompt: promptCopy,
       });
 
-      if (data.success) {
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat._id === selectedChat._id
-              ? { ...chat, messages: [...chat.messages, data.data] }
-              : chat
-          )
-        );
-
-        const message = data.data.content;
-        const messageTokens = message.split(" ");
-        let assistantMessage = {
-          role: "assistant",
-          content: "",
-          timestamp: Date.now(),
-        };
-
-        setSelectedChat((prev) => ({
-          ...prev,
-          messages: [...prev.messages, assistantMessage],
-        }));
-
-        for (let i = 0; i < messageTokens.length; i++) {
-          setTimeout(() => {
-            assistantMessage.content = messageTokens.slice(0, i + 1).join(" ");
-            setSelectedChat((prev) => {
-              const updatedMessages = [
-                ...prev.messages.slice(0, -1),
-                assistantMessage,
-              ];
-              return { ...prev, messages: updatedMessages };
-            });
-          }, i * 100);
-        }
-      } else {
-        toast.error(data.message);
+      if (!data.success) {
+        toast.error(data.message || "AI response failed");
         setPrompt(promptCopy);
+        setIsLoading(false);
+        return;
+      }
+
+      const assistantReply = data.data.content;
+
+      // Create assistant message object for animation
+      const assistantMessage = {
+        role: "assistant",
+        content: "",
+        timestamp: Date.now(),
+      };
+
+      // Add assistant message with empty content first to selectedChat (for animation)
+      setSelectedChat((prev) => ({
+        ...prev,
+        messages: [...prev.messages, assistantMessage],
+      }));
+
+      // Animate assistant reply word by word
+      const words = assistantReply.split(" ");
+      for (let i = 0; i < words.length; i++) {
+        // Delay word animation with a small pause
+        await new Promise((r) => setTimeout(r, i === 0 ? 0 : 100));
+        assistantMessage.content = words.slice(0, i + 1).join(" ");
+        setSelectedChat((prev) => {
+          const updatedMessages = [...prev.messages];
+          updatedMessages[updatedMessages.length - 1] = { ...assistantMessage };
+          return { ...prev, messages: updatedMessages };
+        });
+      }
+
+      // Now that animation finished, add full assistant message to chats list
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat._id === selectedChat._id
+            ? {
+                ...chat,
+                messages: [...chat.messages, { role: "assistant", content: assistantReply, timestamp: Date.now() }],
+              }
+            : chat
+        )
+      );
+
+      // Rename chat only if this is the first AI reply (i.e., before user message there were 0 messages)
+      if (prevMessageCount === 0) {
+        const newTitle = await generateTitle(promptCopy, assistantReply);
+        if (newTitle) {
+          const renameRes = await axios.post("/api/chat/rename", {
+            chatId: selectedChat._id,
+            name: newTitle,
+          });
+
+          if (renameRes.data.success) {
+            // Update chat title locally
+            setChats((prevChats) =>
+              prevChats.map((chat) =>
+                chat._id === selectedChat._id ? { ...chat, name: newTitle } : chat
+              )
+            );
+            setSelectedChat((prev) => ({ ...prev, name: newTitle }));
+          }
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
@@ -114,6 +160,7 @@ const PromptBox = ({ setIsLoading, isLoading }) => {
         required
         onChange={(e) => setPrompt(e.target.value)}
         value={prompt}
+        disabled={isLoading}
       />
 
       <div className="flex items-center justify-between text-sm mt-2">
@@ -157,9 +204,11 @@ const PromptBox = ({ setIsLoading, isLoading }) => {
           </div>
 
           <button
+            type="submit"
+            disabled={isLoading}
             className={`${
               prompt ? "bg-primary" : "bg-[#71717a]"
-            } rounded-full p-2 cursor-pointer`}
+            } rounded-full p-2 cursor-pointer ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             <Image
               src={prompt ? assets.arrow_icon : assets.arrow_icon_dull}

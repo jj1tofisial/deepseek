@@ -30,33 +30,49 @@ export default function Home() {
     }
   }, [messages]);
 
-  // Simulated AI response generator
+  // Replaces the simulated generator with a real POST to your /api/chat/ai route
   const generateAIResponse = async (userMessage) => {
-    // Replace this with your real API/logic
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve(`Here’s a regenerated response to: "${userMessage}"`);
-      }, 1000);
+    // selectedChat._id is assumed to hold the current chat’s ID
+    const response = await fetch("/api/chat/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chatId: selectedChat._id,
+        prompt: userMessage
+      })
     });
+    const json = await response.json();
+    if (!json.success) throw new Error(json.message || "API error");
+    return json.data.content; // the “assistant” message content
   };
 
   const handleRegenerate = async (index) => {
     const userMessageIndex = index - 1;
-    if (userMessageIndex < 0 || messages[userMessageIndex]?.role !== 'user') return;
+    if (
+      userMessageIndex < 0 ||
+      messages[userMessageIndex]?.role !== "user"
+    )
+      return;
 
     setIsLoading(true);
 
-    const userMessage = messages[userMessageIndex].content;
-    const regeneratedResponse = await generateAIResponse(userMessage);
+    try {
+      const userMessage = messages[userMessageIndex].content;
+      const regeneratedResponse = await generateAIResponse(userMessage);
 
-    const updatedMessages = [...messages];
-    updatedMessages[index] = {
-      role: 'assistant',
-      content: regeneratedResponse
-    };
-
-    setMessages(updatedMessages);
-    setIsLoading(false);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[index] = {
+          role: "assistant",
+          content: regeneratedResponse,
+        };
+        return updated;
+      });
+    } catch (e) {
+      console.error("Regenerate error:", e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,6 +118,7 @@ export default function Home() {
                   role={msg.role}
                   content={msg.content}
                   onRegenerate={() => handleRegenerate(index)}
+                  isLoading={isLoading}
                 />
               ))}
 

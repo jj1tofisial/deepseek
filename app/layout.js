@@ -1,15 +1,17 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "./prism.css";
+import "katex/dist/katex.min.css";
+
 import { ClerkProvider } from "@clerk/nextjs";
-import { AppContext, AppContextProvider } from "@/context/AppContext";
-import { Toaster } from "react-hot-toast";
+import { AppContextProvider } from "@/context/AppContext";
+import { MathJaxContext } from "better-react-mathjax";
+import ToasterWrapper from "@/components/ToasterWrapper"; // ⬅️ moved Toaster
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
-
-
 
 export const metadata = {
   title: "DeepSeek - Clone",
@@ -20,20 +22,20 @@ export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
       <AppContextProvider>
-    <html lang="en">
-      <body
-        className={`${inter.variable} antialiased`}
-      >
-       <Toaster toastOptions={
-        {
-          success: {style: { background: "black", color: "white"}},
-          error: {style: { background: "black", color: "white"}}
-        }
-        }/>
-        {children}
-      </body>
-    </html>
-    </AppContextProvider>
+        <MathJaxContext
+          config={{
+            loader: { load: ["[tex]/ams"] },
+            tex: { packages: { "[+]": ["ams"] } },
+          }}
+        >
+          <html lang="en">
+            <body className={`${inter.variable} antialiased`}>
+              <ToasterWrapper /> {/* ✅ client-only */}
+              {children}
+            </body>
+          </html>
+        </MathJaxContext>
+      </AppContextProvider>
     </ClerkProvider>
   );
 }
